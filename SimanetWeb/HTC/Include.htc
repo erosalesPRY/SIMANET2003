@@ -1,0 +1,89 @@
+<PUBLIC:ATTACH event="ondocumentready" handler="AlLeerDocumento"/>
+<SCRIPT language="JScript">
+function AlLeerDocumento(){
+	var otr;
+	var obj = this;
+	var Path="/SimaNetWeb/imagenes/Navegador/";
+	
+	switch(obj.tagName){
+		case "TABLE":
+			return false;
+			obj.className="";
+			var orow =obj.rows[0];
+			orow.className="HeaderGrilla";
+			var oclass=orow.className;//Lee pa propiedad para poder aplicar luego el efecto
+			break;
+		case "TR":
+			return false;
+			otr	= obj;
+			otr.height="35";
+			if(otr.rowIndex==0){
+				for(var c=0;c<=otr.cells.length-1;c++){
+					otr.cells[c].style.filter="Alpha(opacity=100, finishopacity=85, style=1,startx=0, starty=10, finishx=0, finishy=50)";
+				}
+			}
+			break;
+		case "SPAN":
+			oSpan = obj;
+			if(oSpan.className.toString().length==0){
+				var oCellFooter = oSpan.parentElement;
+				var oRowFooter = oCellFooter.parentElement;
+				oRowFooter.parentElement.className=""; 
+				oCellFooter.align ="center";
+				//oCellFooter.style.height="26px";
+				oCellFooter.style.backgroundColor="#dcdcdc";
+				//oCellFooter.style.filter="Alpha(opacity=100, finishopacity=85, style=1,startx=0, starty=10, finishx=0, finishy=50)";
+				for(var i=0;i<=oCellFooter.children.length-1;i++){
+					var SrcImg = ((i==0)?"ibtnAnteriorDisable.gif":"ibtnSiguienteDisable.gif");
+					var ToolTipsImg = ((i==0)?"Anterior":"Siguiente");
+					
+					if(oCellFooter.children[i].innerText=='...'){
+						var oImg = document.createElement("img");
+						oImg.onmousemove=function(){
+							if(this.src.toString().indexOf("ibtnSiguienteDisable")!=-1){
+								this.src = Path + "ibtnSiguiente.gif";
+							}
+							if(this.src.toString().indexOf("ibtnAnteriorDisable")!=-1){
+								this.src = Path + "ibtnAnteriorPress.gif";
+							}							
+						}
+						oImg.onmouseout=function(){
+							if(this.src.toString().indexOf("ibtnSiguiente")!=-1){
+								this.src = Path + "ibtnSiguienteDisable.gif";
+							}
+							if(this.src.toString().indexOf("ibtnAnteriorPress")!=-1){
+								this.src = Path + "ibtnAnteriorDisable.gif";
+							}
+						}
+						var oA = oCellFooter.children[i];
+						var arrPos = ObtenerPosicion(oA);
+						var xTop = arrPos[1];
+						var xLeft =arrPos[0]; 
+						
+						oImg.style.position="absolute";
+						oImg.style.top = xTop;
+						oImg.style.left = xLeft;
+									
+						oImg.Tag = oCellFooter.children[i].href;
+						oImg.style.padding="10px";
+						oImg.style.cursor="hand";
+						oImg.title = ToolTipsImg;
+						oImg.align="center";
+						oImg.onclick=function(){
+							PopupDeEspera();
+							var evento =  this.Tag.toString().replace('javascript:','');
+							eval(evento);
+						}
+						oImg.src = Path + SrcImg;
+						oCellFooter.appendChild(oImg);
+						
+						//oCellFooter.children[i].style.display="none";
+						oA.style.color ="#ffffff";
+					}
+				}
+			}
+			break;
+	}
+}
+</SCRIPT>
+
