@@ -1,0 +1,264 @@
+using System;
+using System.Collections;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Web;
+using System.Web.SessionState;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Web.UI.HtmlControls;
+using SIMA.SimaNetWeb.InterfacesIU;
+using SIMA.Controladoras;
+using SIMA.Controladoras.General;
+using SIMA.Controladoras.GestionFinanciera;
+using SIMA.Utilitario;
+using SIMA.ManejadorExcepcion;
+using SIMA.Log;
+using NetAccessControl;
+using MetaBuilders.WebControls;
+
+namespace SIMA.SimaNetWeb.GestionFinanciera.Presupuesto.Control
+{
+	/// <summary>
+	/// Summary description for ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.
+	/// </summary>
+	public class ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza : System.Web.UI.Page,IPaginaBase,IPaginaMantenimento
+	{
+		#region Control
+		const string GRILLAVACIA="No existe Datos";
+		const string KEYQIDCENTROOPERATIVO="idCeo";
+		const string KEYNROCENTROCOSTO="NroCC";
+		const string KEYCTATIPO="DigCta";
+
+		#endregion
+
+		protected System.Web.UI.WebControls.Label lblRutaPagina;
+		protected System.Web.UI.WebControls.Label lblPagina;
+		protected System.Web.UI.WebControls.Label Label1;
+		protected System.Web.UI.WebControls.TextBox txtBuscar;
+		protected System.Web.UI.WebControls.DropDownList ddlCentroOperativo;
+		protected projDataGridWeb.DataGridWeb grid;
+		protected System.Web.UI.WebControls.Label lblResultado;
+		protected System.Web.UI.WebControls.Literal ltlMensaje;
+
+		private void Page_Load(object sender, System.EventArgs e)
+		{
+			if(!Page.IsPostBack)
+			{
+				try
+				{
+					this.ConfigurarAccesoControles();
+					Helper.ReiniciarSession();
+					this.LlenarJScript();
+					this.LlenarDatos();
+					this.LlenarCombos();
+					this.LlenarGrillaOrdenamientoPaginacion(String.Empty,Constantes.INDICEPAGINADEFAULT);	
+				}
+				catch(SIMAExcepcionLog oSIMAExcepcionLog)
+				{
+					ltlMensaje.Text = Helper.MensajeAlert(oSIMAExcepcionLog.Mensaje);					
+				}
+				catch(SIMAExcepcionIU oSIMAExcepcionIU)
+				{
+					ltlMensaje.Text = Helper.MensajeAlert(oSIMAExcepcionIU.Mensaje);					
+				}
+				catch(SIMAExcepcionDominio oSIMAExcepcionDominio)
+				{
+					ltlMensaje.Text = Helper.MensajeAlert(oSIMAExcepcionDominio.Mensaje);					
+				}
+				catch(Exception oException)
+				{
+					string msgb =oException.Message.ToString();
+					SIMAExcepcionIU oSIMAExcepcionIU = LogTransaccional.CrearSIMAExcepcionIU(CNetAccessControl.GetUserName(),this.GetType().Name,Enumerados.OrigenError.Presentacion.ToString(),Constantes.CODIGOERRORGENERICO,oException.Message);
+					Helper.ControlarErrorIU(this,oSIMAExcepcionIU.Mensaje);
+				}
+			}
+		}
+
+		#region Web Form Designer generated code
+		override protected void OnInit(EventArgs e)
+		{
+			//
+			// CODEGEN: This call is required by the ASP.NET Web Form Designer.
+			//
+			InitializeComponent();
+			base.OnInit(e);
+		}
+		
+		/// <summary>
+		/// Required method for Designer support - do not modify
+		/// the contents of this method with the code editor.
+		/// </summary>
+		private void InitializeComponent()
+		{    
+			this.grid.ItemDataBound += new System.Web.UI.WebControls.DataGridItemEventHandler(this.grid_ItemDataBound);
+			this.Load += new System.EventHandler(this.Page_Load);
+
+		}
+		#endregion
+
+		#region IPaginaBase Members
+
+		public void LlenarGrilla()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.LlenarGrilla implementation
+		}
+
+		public void LlenarGrillaOrdenamiento(string columnaOrdenar)
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.LlenarGrillaOrdenamiento implementation
+		}
+		DataTable ObtenerDatos()
+		{
+			string Tipo = Convert.ToString(Page.Request.Params[KEYCTATIPO]);
+			if(Tipo.Substring(Tipo.Length-1,1)== "5")
+			{
+				return (new CPresupuestoControl()).ConsultarServiciosDetalleporCentrodeCostoyTipo(Convert.ToInt32(Page.Request.Params[KEYQIDCENTROOPERATIVO]),Convert.ToString(Page.Request.Params[KEYNROCENTROCOSTO]),Convert.ToString(Page.Request.Params[KEYCTATIPO]));
+			}
+			else
+			{
+				return (new CPresupuestoControl()).ConsultarMaterialesDetalleporCentrodeCostoyTipo(Convert.ToInt32(Page.Request.Params[KEYQIDCENTROOPERATIVO]),Convert.ToString(Page.Request.Params[KEYNROCENTROCOSTO]),Convert.ToString(Page.Request.Params[KEYCTATIPO]));
+			}
+			
+		}
+		public void LlenarGrillaOrdenamientoPaginacion(string columnaOrdenar, int indicePagina)
+		{
+			DataTable dtGeneral = this.ObtenerDatos();
+			if(dtGeneral!=null)
+			{
+				grid.DataSource = dtGeneral;
+				lblResultado.Visible = false;
+			}
+			else
+			{
+				grid.DataSource = dtGeneral;
+				lblResultado.Text = GRILLAVACIA;
+			}
+			try
+			{
+				grid.DataBind();
+			}
+			catch	
+			{
+				grid.CurrentPageIndex = 0;
+				grid.DataBind();
+			}
+		}
+
+		public void LlenarCombos()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.LlenarCombos implementation
+		}
+
+		public void LlenarDatos()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.LlenarDatos implementation
+		}
+
+		public void LlenarJScript()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.LlenarJScript implementation
+		}
+
+		public void RegistrarJScript()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.RegistrarJScript implementation
+		}
+
+		public void Imprimir()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.Imprimir implementation
+		}
+
+		public void Exportar()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.Exportar implementation
+		}
+
+		public void ConfigurarAccesoControles()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.ConfigurarAccesoControles implementation
+		}
+
+		public bool ValidarFiltros()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.ValidarFiltros implementation
+			return false;
+		}
+
+		#endregion
+
+		#region IPaginaMantenimento Members
+
+		public void Agregar()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.Agregar implementation
+		}
+
+		public void Modificar()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.Modificar implementation
+		}
+
+		public void Eliminar()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.Eliminar implementation
+		}
+
+		public void CargarModoPagina()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.CargarModoPagina implementation
+		}
+
+		public void CargarModoNuevo()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.CargarModoNuevo implementation
+		}
+
+		public void CargarModoModificar()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.CargarModoModificar implementation
+		}
+
+		public void CargarModoConsulta()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.CargarModoConsulta implementation
+		}
+
+		public bool ValidarCampos()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.ValidarCampos implementation
+			return false;
+		}
+
+		public bool ValidarCamposRequeridos()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.ValidarCamposRequeridos implementation
+			return false;
+		}
+
+		public bool ValidarExpresionesRegulares()
+		{
+			// TODO:  Add ConsultarSaldoPorCentrodeCostoDetalleporNaturaleza.ValidarExpresionesRegulares implementation
+			return false;
+		}
+
+		#endregion
+
+		private void grid_ItemDataBound(object sender, System.Web.UI.WebControls.DataGridItemEventArgs e)
+		{
+			if(e.Item.ItemType == ListItemType.AlternatingItem || e.Item.ItemType == ListItemType.Item)
+			{
+				DataRowView drv = (DataRowView)e.Item.DataItem;
+				DataRow dr = drv.Row;
+				e.Item.Cells[3].Text = Convert.ToDouble(e.Item.Cells[3].Text).ToString(Utilitario.Constantes.FORMATODECIMAL4);
+				e.Item.Cells[4].Text = Convert.ToDouble(e.Item.Cells[4].Text).ToString(Utilitario.Constantes.FORMATODECIMAL4);
+				if(Convert.ToInt32(dr["Historico"].ToString())==0){
+					e.Item.Attributes.Add("bgcolor","#ffff66");
+				}
+				Helper.SeleccionarItemGrillaOnClickMoverRaton(e);
+			}
+		}
+	}
+}
