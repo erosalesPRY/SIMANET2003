@@ -1,0 +1,442 @@
+using System;
+using System.Collections;
+using System.ComponentModel;
+using System.Data;
+using System.Web;
+using System.Web.SessionState;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Web.UI.HtmlControls;
+using SIMA.SimaNetWeb.InterfacesIU;
+using SIMA.Controladoras.GestionIntegrada;
+using SIMA.Controladoras.General;
+using SIMA.EntidadesNegocio;
+using SIMA.EntidadesNegocio.GestionIntegrada;
+using SIMA.Utilitario;
+using SIMA.ManejadorExcepcion;
+using SIMA.Log;
+using NetAccessControl;
+using MetaBuilders.WebControls;
+using System.Configuration;
+
+namespace SIMA.SimaNetWeb.GestionIntegrada
+{
+	/// <summary>
+	/// Summary description for AdministrarControldeAccionesPorCausaRaiz.
+	/// </summary>
+	public class AdministrarControldeAccionesPorCausaRaiz : System.Web.UI.Page,IPaginaBase	
+	{
+		#region Controles
+		protected System.Web.UI.WebControls.Label lblRutaPagina;
+		protected System.Web.UI.WebControls.Label lblPagina;
+		protected System.Web.UI.WebControls.Label Label3;
+		protected System.Web.UI.WebControls.Label Label4;
+		protected System.Web.UI.WebControls.TextBox txtTipoAuditoria;
+		protected System.Web.UI.WebControls.Label Label5;
+		protected System.Web.UI.WebControls.TextBox txtAuditoria;
+		protected System.Web.UI.WebControls.Label Label8;
+		protected System.Web.UI.WebControls.TextBox txtTipoAccion;
+		protected System.Web.UI.WebControls.Label Label9;
+		protected System.Web.UI.WebControls.TextBox txtDetectadoEn;
+		protected System.Web.UI.WebControls.Label Label6;
+		protected System.Web.UI.WebControls.TextBox txtNroRegistro;
+		protected System.Web.UI.WebControls.Label Label7;
+		protected System.Web.UI.WebControls.TextBox txtFechaEmision;
+		protected System.Web.UI.WebControls.Label Label11;
+		protected System.Web.UI.WebControls.TextBox txtNDiasTrans;
+		protected System.Web.UI.WebControls.Label Label12;
+		protected System.Web.UI.WebControls.TextBox txtFechaCaducidad;
+		protected System.Web.UI.WebControls.Label Label10;
+		protected System.Web.UI.WebControls.TextBox txtDescripcion;
+		protected System.Web.UI.WebControls.Label Label13;
+		protected System.Web.UI.WebControls.TextBox txtAccionesInmediatas;
+		protected System.Web.UI.WebControls.Label Label1;
+		protected System.Web.UI.WebControls.Label Label2;
+		protected System.Web.UI.WebControls.Button btnSubir;
+		protected System.Web.UI.HtmlControls.HtmlInputHidden hIdEstado;
+		protected System.Web.UI.HtmlControls.HtmlInputHidden hIdEstadoACAP;
+		protected System.Web.UI.HtmlControls.HtmlInputFile FUFile;
+		protected System.Web.UI.HtmlControls.HtmlTableCell CellLstCausaRaiz;
+		protected System.Web.UI.HtmlControls.HtmlInputHidden hIdRowGrid;
+		protected System.Web.UI.HtmlControls.HtmlInputHidden hIdRowGridACAP;
+		protected System.Web.UI.HtmlControls.HtmlInputHidden hIdAccion;
+		protected System.Web.UI.HtmlControls.HtmlInputHidden hNombreArchivo;
+		protected System.Web.UI.HtmlControls.HtmlInputHidden hRutaHTTP;
+		protected System.Web.UI.HtmlControls.HtmlInputHidden hIdAccionAnexo;
+		protected System.Web.UI.HtmlControls.HtmlTableCell CellLstCR;
+		protected System.Web.UI.WebControls.Label Label14;
+		protected System.Web.UI.HtmlControls.HtmlInputHidden hPathFotos;
+		protected System.Web.UI.HtmlControls.HtmlInputHidden hNGrpCR;
+		#endregion
+
+
+		protected System.Web.UI.WebControls.Label Label15;
+		protected System.Web.UI.WebControls.Label Label16;
+		protected System.Web.UI.WebControls.TextBox txtDestino;
+		protected System.Web.UI.WebControls.TextBox txtFechaRespuesta;
+
+
+		const string KEYQIGRUPOCRA= "IdGRPCRA";
+		const string KEYQLSTCR = "LstCR";
+		const string KEYQIDDESTINO="IdDestino";
+		const string KEYQIDSAM = "IdSAM";
+		const string KEYQDESCRIPCION="Descrip";
+		const string KEYQNOMAREA="NOMAREA";
+		const string KEYQFECHAENVIA="FENVIA";
+		const string KEYQIDUSUARIOEMITE= "IdUsuarioEmite";
+
+		private int IdUsuarioEmite
+		{
+			get{return Convert.ToInt32(Page.Request.Params[KEYQIDUSUARIOEMITE]);}
+		}
+		string Descripcion
+		{
+				get{return Helper.HttpUtility.HtmlDecode(Page.Request.Params[KEYQDESCRIPCION]);}
+		}
+		private string IdSolicitudAcciondeMejora
+		{
+			get{return Page.Request.Params[KEYQIDSAM];}
+		}
+		private string IdDestino
+		{
+			get{return Page.Request.Params[KEYQIDDESTINO];}
+		}
+		private string IdGrupoCausaRaizAccion
+		{
+			get{return Page.Request.Params[KEYQIGRUPOCRA];}
+		}
+		private string LstCausaRaiz
+		{
+			get{return Page.Request.Params[KEYQLSTCR];}
+		}
+
+		private string OGIRutaLocal
+		{
+			get{return ConfigurationSettings.AppSettings["RutaLocalOGI"].ToString();}
+		}
+		private string OGIRutaHttp
+		{
+			get{return ConfigurationSettings.AppSettings["RutaHTTPOGI"].ToString();}
+		}
+
+		private string NombreArea
+		{
+			get{return Page.Request.Params[KEYQNOMAREA];}
+		}
+		private string FechaRespuesta
+		{
+			get{return Page.Request.Params[KEYQFECHAENVIA];}
+		}
+
+		
+
+
+		private void Page_Load(object sender, System.EventArgs e)
+		{
+			if(!Page.IsPostBack)
+			{
+				try
+				{
+					this.ConfigurarAccesoControles();	
+					Helper.ReiniciarSession();
+					this.LlenarJScript();
+					this.LlenarCombos();
+					this.LlenarDatos();
+					LogAplicativo.GrabarLogAplicativoArchivo(new LogAplicativo(CNetAccessControl.GetUserName(), "Gestión de Personal: Administrar Becados", this.ToString(),"Se consultó El Listado de las Capacitaciones en el Extranjero.",Enumerados.NivelesErrorLog.I.ToString()));
+					Helper.ReestablecerPagina();
+
+				}
+				catch(SIMAExcepcionLog oSIMAExcepcionLog)
+				{
+					Helper.MsgBox(oSIMAExcepcionLog.Mensaje);					
+				}
+				catch(SIMAExcepcionIU oSIMAExcepcionIU)
+				{
+					Helper.MsgBox(oSIMAExcepcionIU.Mensaje);					
+				}
+				catch(SIMAExcepcionDominio oSIMAExcepcionDominio)
+				{
+					Helper.MsgBox(oSIMAExcepcionDominio.Mensaje);					
+				}
+				catch(Exception oException)
+				{
+					string msg = oException.Message.ToString();
+					SIMAExcepcionIU oSIMAExcepcionIU = LogTransaccional.CrearSIMAExcepcionIU(CNetAccessControl.GetUserName(),this.GetType().Name,Enumerados.OrigenError.Presentacion.ToString(),Utilitario.Constantes.CODIGOERRORGENERICO,oException.Message);
+					Helper.ControlarErrorIU(this,oSIMAExcepcionIU.Mensaje);
+				}
+			}				
+		}
+
+		#region Web Form Designer generated code
+		override protected void OnInit(EventArgs e)
+		{
+			//
+			// CODEGEN: This call is required by the ASP.NET Web Form Designer.
+			//
+			InitializeComponent();
+			base.OnInit(e);
+		}
+		
+		/// <summary>
+		/// Required method for Designer support - do not modify
+		/// the contents of this method with the code editor.
+		/// </summary>
+		private void InitializeComponent()
+		{    
+			this.Load += new System.EventHandler(this.Page_Load);
+
+		}
+		#endregion
+
+		string strLstCausaRaiz="";
+		void ListarCausaRaiz()
+		{
+			DataTable dtc = (new CCausaRaiz()).ListarTodosGrilla(this.IdDestino);
+			int idxc =1;
+			if(dtc!=null)
+			{
+				//Crear los grupos
+				DataTable dtd = Helper.SelectDistinct(dtc,"IdGrupoCausaRaizAccion","IdEstadoGrupoCausaRaizAccion");
+				int IdGrp=1;
+				foreach(DataRow drc in dtd.Select("IdGrupoCausaRaizAccion <> '0'"))
+				{
+					HtmlTable TBLGRP =  Helper.CrearHtmlTabla(1,3,true);
+					TBLGRP.Style["MARGIN"]="2px";
+					//BORDER-BOTTOM: dimgray 1px solid; BORDER-LEFT: dimgray 1px solid; BORDER-TOP: dimgray 1px solid; BORDER-RIGHT: dimgray 1px solid
+					
+					TBLGRP.Style["BORDER"]="dimgray 1px solid;";
+					TBLGRP.ID = drc["IdGrupoCausaRaizAccion"].ToString();
+					TBLGRP.Border=0;
+					TBLGRP.CellPadding=0;
+					TBLGRP.CellSpacing=0;
+					TBLGRP.Attributes["width"] ="100%";
+					TBLGRP.Rows[0].Cells[0].InnerText= IdGrp.ToString();
+					TBLGRP.Rows[0].Cells[0].Style["width"]="50px";
+					TBLGRP.Rows[0].Cells[0].Style["COLOR"]="#3300ff";
+					TBLGRP.Rows[0].Cells[0].Style["TEXT-DECORATION"]="underline";
+					TBLGRP.Rows[0].Cells[0].Style["BORDER-RIGHT"]="dimgray 1px solid;";
+					
+					TBLGRP.Rows[0].Cells[0].Align="center";
+					TBLGRP.Rows[0].Cells[0].Style["cursor"]="hand";
+					TBLGRP.Rows[0].Cells[0].Attributes["onclick"]="CargarAccionesPorCausaRaiz(this)";
+					//Crear la imagen de Estado
+					HtmlImage oImg = new  HtmlImage();
+					oImg.Src = Page.Request.ApplicationPath +"/imagenes/Navegador/" +((drc["IdEstadoGrupoCausaRaizAccion"].ToString()!="2")?"OpenRed.jpg":"Cerrado2.jpg");
+					oImg.Width=50;
+					oImg.Height=50;
+					TBLGRP.Rows[0].Cells[2].Style["width"]="60px";
+					TBLGRP.Rows[0].Cells[2].Controls.Add(oImg);
+					TBLGRP.Rows[0].Cells[2].Align="center";
+					TBLGRP.Rows[0].Cells[2].Style["BORDER-LEFT"]="dimgray 1px solid;";
+					
+
+					IdGrp++;
+					CellLstCR.Controls.Add(TBLGRP);
+					foreach(DataRow dr1 in dtc.Select("IdGrupoCausaRaizAccion='" + drc["IdGrupoCausaRaizAccion"].ToString() + "'"))
+					{
+						TBLGRP.Rows[0].Cells[1].Controls.Add(CrearTblCausaRaiz(dr1,idxc));
+						TBLGRP.Rows[0].Cells[1].Style["PADDING-LEFT"]="5px;";
+						TBLGRP.Rows[0].Cells[1].Style["PADDING-RIGHT"]="5px;";
+						idxc++;
+					}
+				}
+				idxc=1;
+				foreach(DataRow dr1 in dtc.Select("IdGrupoCausaRaizAccion='0'"))
+				{
+					CellLstCR.Controls.Add(CrearTblCausaRaiz(dr1,idxc));
+					idxc++;
+				}
+			}			
+		}
+
+		HtmlTable CrearTblCausaRaiz(DataRow drc,int idxc)
+		{
+
+			HtmlTable TBLItem =  Helper.CrearHtmlTabla(1,2,true);
+			TBLItem.Border=0;
+			TBLItem.Attributes["width"] ="100%";
+			TBLItem.Attributes["IDCAUSARAIZ"] =drc["IdCausaRaiz"].ToString();
+						
+			TBLItem.Attributes["IDGRPCR"] =drc["IdGrupoCausaRaizAccion"].ToString();
+
+			TBLItem.Attributes["IDESTADO"] =drc["IdEstado"].ToString();
+			TBLItem.Attributes["CONACCION"] =drc["ConAccion"].ToString();
+
+			TBLItem.CellSpacing=0;
+			TBLItem.Style["MARGIN-TOP"]="2px";
+			TBLItem.Attributes["class"] ="BaseItemInGrid";
+
+			TBLItem.Rows[0].Cells[0].InnerText = idxc.ToString();
+			//TBLItem.Rows[0].Cells[0].Style["TEXT-DECORATION"]="underline";
+			//TBLItem.Rows[0].Cells[0].Style["CURSOR"]="Hand";
+			
+			TBLItem.Rows[0].Cells[0].Attributes["width"] ="80px";
+			TBLItem.Rows[0].Cells[1].InnerText = drc["Descripcion"].ToString();
+			TBLItem.Rows[0].Cells[1].Attributes["width"] ="100%";
+		
+			/*if(drc["ConAccion"].ToString()!="0")
+			{
+				TBLItem.Rows[0].Cells[1].Style.Add("cursor","hand");
+				TBLItem.Rows[0].Cells[1].Style.Add("COLOR","#0000ff");
+				TBLItem.Rows[0].Cells[1].Style.Add("TEXT-DECORATION","underline");
+				TBLItem.Rows[0].Cells[1].Attributes[Utilitario.Enumerados.EventosJavaScript.OnClick.ToString()] = "CargarAccionesPorCausaRaiz('" + drc["IdCausaRaiz"].ToString() + "');";
+			}*/
+			return TBLItem;
+		}
+
+
+
+
+
+
+
+
+
+		
+		#region IPaginaBase Members
+
+		public void LlenarGrilla()
+		{
+			// TODO:  Add AdministrarControldeAccionesPorCausaRaiz.LlenarGrilla implementation
+		}
+
+		public void LlenarGrillaOrdenamiento(string columnaOrdenar)
+		{
+			// TODO:  Add AdministrarControldeAccionesPorCausaRaiz.LlenarGrillaOrdenamiento implementation
+		}
+
+		DataTable ObtenerDatos()
+		{
+			return (new CSAMAccion()).ListarTodosGrilla(this.strLstCausaRaiz,this.IdDestino);
+		}
+		public void LlenarGrillaOrdenamientoPaginacion(string columnaOrdenar, int indicePagina)
+		{
+			
+		}
+
+		public void LlenarCombos()
+		{
+			// TODO:  Add AdministrarControldeAccionesPorCausaRaiz.LlenarCombos implementation
+		}
+
+		public void LlenarDatos()
+		{
+			SolicitudAccionMejoraBE oSolicitudAccionMejoraBE = (SolicitudAccionMejoraBE) (new CSolicituddeAcciondeMejora()).ListarDetalle(this.IdSolicitudAcciondeMejora,this.IdUsuarioEmite);
+			this.txtTipoAuditoria.Text=oSolicitudAccionMejoraBE.NombreTipoAuditoria;
+			this.txtAuditoria.Text =oSolicitudAccionMejoraBE.NombreAuditoria;
+			this.txtNroRegistro.Text=oSolicitudAccionMejoraBE.CodigoSAM;
+			this.txtFechaEmision.Text=oSolicitudAccionMejoraBE.FechaEmision.ToShortDateString();
+			this.txtTipoAccion.Text=oSolicitudAccionMejoraBE.NombreTipoAccion;
+			this.txtDetectadoEn.Text=oSolicitudAccionMejoraBE.NombreDetectadoEn;
+			this.txtDescripcion.Text=oSolicitudAccionMejoraBE.DescripcionHallazgo;
+			this.txtNDiasTrans.Text = oSolicitudAccionMejoraBE.NroDiasTrasncurridos.ToString();
+			this.txtFechaCaducidad.Text = oSolicitudAccionMejoraBE.FechaCaducidad.ToShortDateString();
+			this.txtAccionesInmediatas.Text =this.Descripcion;// oSolicitudAccionMejoraBE.DescripcionAccionInmediata;
+			this.txtAccionesInmediatas.Attributes["OLD"] = this.Descripcion;//oSolicitudAccionMejoraBE.DescripcionAccionInmediata;
+			this.hIdEstado.Value = oSolicitudAccionMejoraBE.IdEstado.ToString();
+
+			this.txtDestino.Text = this.NombreArea;
+			this.txtFechaRespuesta.Text = this.FechaRespuesta;
+
+
+			/*if(oSolicitudAccionMejoraBE.IdEstado!=2)
+			{
+				imgClose.Style["display"]="none";
+			}*/
+			ListarCausaRaiz();
+			//CargarCausaRaizDisponibles();
+			hPathFotos.Value =System.Configuration.ConfigurationSettings.AppSettings[Utilitario.Constantes.RUTAFOTOSP].ToString();
+			hRutaHTTP.Value = this.OGIRutaHttp;
+		}
+
+
+		public void LlenarJScript()
+		{
+			btnSubir.Style["display"]="none";
+		}
+
+		public void RegistrarJScript()
+		{
+			// TODO:  Add AdministrarControldeAccionesPorCausaRaiz.RegistrarJScript implementation
+		}
+
+		public void Imprimir()
+		{
+			// TODO:  Add AdministrarControldeAccionesPorCausaRaiz.Imprimir implementation
+		}
+
+		public void Exportar()
+		{
+			// TODO:  Add AdministrarControldeAccionesPorCausaRaiz.Exportar implementation
+		}
+
+		public void ConfigurarAccesoControles()
+		{
+			// TODO:  Add AdministrarControldeAccionesPorCausaRaiz.ConfigurarAccesoControles implementation
+		}
+
+		public bool ValidarFiltros()
+		{
+			// TODO:  Add AdministrarControldeAccionesPorCausaRaiz.ValidarFiltros implementation
+			return false;
+		}
+
+		#endregion
+
+		private void gridACAP_ItemDataBound(object sender, System.Web.UI.WebControls.DataGridItemEventArgs e)
+		{
+			if(e.Item.ItemType == ListItemType.AlternatingItem || e.Item.ItemType == ListItemType.Item)
+			{
+				DataRowView drv = (DataRowView)e.Item.DataItem;
+				DataRow dr = drv.Row;
+				Helper.UIControls.DataGrid.CHiperLink((DataGrid)sender, e.Item.Cells[0],"");
+				Helper.SeleccionarItemGrillaOnClickMoverRaton(e,"jNet.get('hIdRowGridACAP').value=this.rowIndex;" + Helper.MostrarDatosEnCajaTexto("hIdAccion",dr["IdAccion"].ToString()));
+
+				e.Item.Attributes["MODO"]="M";
+				e.Item.Attributes["IDACCION"]=dr["IdAccion"].ToString();
+
+				DropDownList ddl = (DropDownList) e.Item.Cells[1].FindControl("ddlTipoAccion");
+				ddl.DataSource = (new CTablaTablas()).ListaTodosCombo(521);
+				ddl.DataTextField="var1";
+				ddl.DataValueField="codigo";
+				ddl.DataBind();
+				ddl.Items.Insert(0,(new ListItem("[Seleccionar..]","0")));
+				ListItem lItem = ddl.Items.FindByValue(dr["IdTipoAccion"].ToString());
+				if(lItem!=null){lItem.Selected=true;}
+				
+				ddl.Attributes["OLD"]=dr["IdTipoAccion"].ToString();
+				ddl.Attributes[Utilitario.Enumerados.EventosJavaScript.OnChange.ToString()]="Agregar(this);";		
+
+				TextBox tb = (TextBox)e.Item.Cells[2].FindControl("txtAccion");
+				tb.Text = dr["Descripcion"].ToString();
+				tb.Attributes["OLD"]=dr["Descripcion"].ToString();
+				tb.Attributes[Utilitario.Enumerados.EventosJavaScript.OnBlur.ToString()]="Agregar(this);";		
+
+				tb = (TextBox)e.Item.Cells[3].FindControl("txtFechaPlazo");
+				tb.Text = dr["PlazoEjecucion"].ToString();
+				tb.Attributes["OLD"]=dr["PlazoEjecucion"].ToString();
+				tb.Attributes[Utilitario.Enumerados.EventosJavaScript.OnBlur.ToString()]="Agregar(this);";
+
+				e.Item.Cells[4].Style["PADDING-TOP"]="5px";
+				e.Item.Cells[4].Attributes["Align"]="left";
+				e.Item.Cells[4].Attributes["vAlign"]="top";
+				e.Item.Cells[4].Attributes["OLD"]=dr["IdPersonal"].ToString();
+				e.Item.Cells[4].Attributes["value"]=dr["IdPersonal"].ToString();
+				e.Item.Cells[4].Attributes["Nombre"]=dr["ApellidosyNombres"].ToString();
+
+				if(dr["IdAccion"].ToString()=="9")
+				{
+					e.Item.Attributes["MODO"]="N";
+					Image oimg =(Image) e.Item.Cells[6].FindControl("imgEliminar2");
+					oimg.Style["display"]="none";
+				}
+			}
+		
+		}
+
+		private void gridACAP_SelectedIndexChanged(object sender, System.EventArgs e)
+		{
+		
+		}
+	}
+}
